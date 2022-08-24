@@ -13,12 +13,23 @@ server.listen(port, () => {
 // Routing
 app.use(express.static( 'public'));
 
+
+var currentGames = {}; // gameId: {...}
+var matchMaking = [];
+
 // Chatroom
 
 let numUsers = 0;
 
 io.on('connection', (socket) => {
     let addedUser = false;
+
+    // when the client emits 'new message', this listens and executes
+    socket.on('matchmaking', (data) => {
+        matchMaking.push(data);
+        console.log(matchMaking);
+        console.log("ADDED");
+    });
 
     // when the client emits 'new message', this listens and executes
     socket.on('new message', (data) => {
