@@ -1,6 +1,19 @@
 import * as THREE from '../js/three.js';
 import { DragControls } from '../js/dragcontrols.js';
 
+
+// TO-DO:
+// primeira coisa a fazer ver se o meu username esta nalgum match. 
+// se nao -> kickar
+// ter um object do tipo username: gameId
+// ver se username ja existe quando se faz login
+
+
+var username = sessionStorage.getItem("username");
+var matchInfo = JSON.parse(sessionStorage.getItem("matchInfo"));
+$("#opponentName").text(matchInfo.player1 === username ? matchInfo.player2 : matchInfo.player1);
+$("#playerName").text(username);
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
@@ -50,3 +63,4 @@ controls.addEventListener( 'dragend', function ( event ) {
 	event.object.position.set(0, -3.5, 0);
 
 });
+

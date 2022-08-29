@@ -4,46 +4,71 @@ const app = express();
 const path = require('path');
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
+const crypto = require('crypto');
 const port = 5000;
-
 server.listen(port, () => {
     console.log('Server listening at port %d', port);
 });
 
 // Routing
-app.use(express.static( 'public'));
+app.use(express.static('public'));
 
 
 var currentGames = {}; // gameId: {...}
 var matchMaking = [];
+var numUsers = 0;
 
-// Chatroom
 
-let numUsers = 0;
+
+function checkIfPairFound() {
+    if (matchMaking.length < 2)
+        return;
+     
+    let newGamePlayers = matchMaking.splice(0, 2);
+    let newGameUUID = '';
+    
+    do {
+        newGameUUID = crypto.randomUUID();
+    }
+    while(newGameUUID in currentGames);
+    
+    // TO-DO: generate hands
+    currentGames[newGameUUID] = newGamePlayers;
+
+    let gameObj = {
+        'gameUUID': newGameUUID,
+        'player1': newGamePlayers[0].username,
+        'player2': newGamePlayers[1].username
+    }
+
+    newGamePlayers[0].socket.emit('match found', gameObj);
+    newGamePlayers[1].socket.emit('match found', gameObj);
+
+
+}
 
 io.on('connection', (socket) => {
     let addedUser = false;
 
-    // when the client emits 'new message', this listens and executes
     socket.on('matchmaking', (data) => {
-        matchMaking.push(data);
-        console.log(matchMaking);
-        console.log("ADDED");
+        matchMaking.push(
+            {
+                'username': data, 
+                'socket': socket
+            });
+        
+        checkIfPairFound();
+
     });
 
-    // when the client emits 'new message', this listens and executes
-    socket.on('new message', (data) => {
-        // we tell the client to execute 'new message'
-        socket.broadcast.emit('new message', {
-            username: socket.username,
-            message: data
-        });
+    socket.on('cancel matchmaking', (data) => {
+        matchMaking = matchMaking.filter( i => i.username != data);
     });
 
     // when the client emits 'add user', this listens and executes
     socket.on('add user', (username) => {
         if (addedUser) return;
-
+        
         // we store the username in the socket session for this client
         socket.username = username;
         ++numUsers;
@@ -57,26 +82,21 @@ io.on('connection', (socket) => {
             numUsers: numUsers
         });
     });
-
-    // when the client emits 'typing', we broadcast it to others
-    socket.on('typing', () => {
-        socket.broadcast.emit('typing', {
-            username: socket.username
+    
+    // when the client emits 'new message', this listens and executes
+    socket.on('new message', (data) => {
+        // we tell the client to execute 'new message'
+        socket.broadcast.emit('new message', {
+            username: socket.username,
+            message: data
         });
     });
-
-    // when the client emits 'stop typing', we broadcast it to others
-    socket.on('stop typing', () => {
-        socket.broadcast.emit('stop typing', {
-            username: socket.username
-        });
-    });
-
+    
     // when the user disconnects.. perform this
     socket.on('disconnect', () => {
         if (addedUser) {
             --numUsers;
-
+            
             // echo globally that this client has left
             socket.broadcast.emit('user left', {
                 username: socket.username,
@@ -84,4 +104,19 @@ io.on('connection', (socket) => {
             });
         }
     });
+
+    // // when the client emits 'typing', we broadcast it to others
+    // socket.on('typing', () => {
+    //     socket.broadcast.emit('typing', {
+    //         username: socket.username
+    //     });
+    // });
+    
+    // // when the client emits 'stop typing', we broadcast it to others
+    // socket.on('stop typing', () => {
+    //     socket.broadcast.emit('stop typing', {
+    //         username: socket.username
+    //     });
+    // });
+
 });
