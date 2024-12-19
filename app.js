@@ -20,6 +20,30 @@ var numUsers = 0;
 
 
 
+function prepareGame () {
+    var deck1 = [...Array(5)].flatMap((_, i) => Array(10).fill(i)).sort(() => Math.random() - 0.5);
+    var hand1 = deck1.splice(0,5);
+    var deck2 = [...Array(5)].flatMap((_, i) => Array(10).fill(i)).sort(() => Math.random() - 0.5);
+    var hand2 = deck2.splice(0,5);
+    
+    var gameObj = {
+        player1: {
+            ready: false,
+            deck: deck1,
+            hand: hand1,
+            grave: []
+        },
+        player2: {
+            ready: false,
+            deck: deck2,
+            hand: hand2,
+            grave: []
+        },
+    }
+
+    return gameObj;
+}
+
 function checkIfPairFound() {
     if (matchMaking.length < 2)
         return;
@@ -32,19 +56,19 @@ function checkIfPairFound() {
     }
     while(newGameUUID in currentGames);
     
-    // TO-DO: generate hands
-    currentGames[newGameUUID] = newGamePlayers;
-
-    let gameObj = {
+    
+    let gameInfo = {
         'gameUUID': newGameUUID,
         'player1': newGamePlayers[0].username,
         'player2': newGamePlayers[1].username
     }
-
-    newGamePlayers[0].socket.emit('match found', gameObj);
-    newGamePlayers[1].socket.emit('match found', gameObj);
-
-
+    
+    newGamePlayers[0].socket.emit('match found', gameInfo);
+    newGamePlayers[1].socket.emit('match found', gameInfo);
+    
+    let gameObj = prepareGame();
+    console.log(gameObj);
+    currentGames[newGameUUID] = gameObj;
 }
 
 io.on('connection', (socket) => {
@@ -84,6 +108,7 @@ io.on('connection', (socket) => {
     });
     
     // when the client emits 'new message', this listens and executes
+    // not used... yet (for chat ^.^)
     socket.on('new message', (data) => {
         // we tell the client to execute 'new message'
         socket.broadcast.emit('new message', {
@@ -94,6 +119,7 @@ io.on('connection', (socket) => {
     
     // when the user disconnects.. perform this
     socket.on('disconnect', () => {
+        console.log(socket.username, "left");
         if (addedUser) {
             --numUsers;
             
@@ -105,6 +131,16 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('startGame', (data) => {
+        currentGames[data.gameUUID][data.player]["ready"] = true;
+        currentGames[data.gameUUID][data.player]["socket"] = socket;
+
+        if (currentGames[data.gameUUID]["player1"]["ready"] && currentGames[data.gameUUID]["player2"]["ready"]){
+            currentGames[data.gameUUID]["player1"]["socket"].emit("startingHand", currentGames[data.gameUUID]["player1"]["hand"])
+            currentGames[data.gameUUID]["player2"]["socket"].emit("startingHand", currentGames[data.gameUUID]["player2"]["hand"])
+        }
+
+    });
     // // when the client emits 'typing', we broadcast it to others
     // socket.on('typing', () => {
     //     socket.broadcast.emit('typing', {
