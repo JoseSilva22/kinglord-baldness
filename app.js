@@ -177,10 +177,16 @@ io.on('connection', (socket) => {
         if (data.countered) {
             // Action countered; notify the initiator
             game[opponent].socket.emit('actionCountered', { card: data.card });
+            // update graveyard
+            game[opponent].graveyard.push(data.card)
+            // emit graveyard updates
         } else {
             // Action confirmed; apply effect
             game[data.player].socket.emit('actionConfirmed', { card: data.card });
             game[opponent].socket.emit('actionConfirmed', { card: data.card });
+            // update battlefield
+            game[opponent].battlefield.push(data.card)
+            // emit battlefield updates
         }
 
         

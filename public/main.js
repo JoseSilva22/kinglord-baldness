@@ -1,5 +1,5 @@
 $(function () {
-    $( "#mindbug" ).click(function() {
-        window.location = '/mindbug/main.html';
+    $( "#lands" ).click(function() {
+        window.location = '/lands/main.html';
     });
 });

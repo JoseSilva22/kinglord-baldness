@@ -53,7 +53,7 @@ socket.on('match found', (matchInfo) => {
     sessionStorage.setItem("username", username);
     sessionStorage.setItem("matchInfo", JSON.stringify(matchInfo));
     
-    window.location = '/mindbug/game.html';
+    window.location = '/lands/game.html';
 });
 
 // MATCHMAKING
