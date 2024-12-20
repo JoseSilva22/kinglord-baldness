@@ -18,7 +18,13 @@ var currentGames = {}; // gameId: {...}
 var matchMaking = [];
 var numUsers = 0;
 
-
+const cardTypes = {
+    0: "forest",
+    1: "island",
+    2: "mountain",
+    3: "plains",
+    4: "swamp",
+};
 
 function prepareGame () {
     var deck1 = [...Array(5)].flatMap((_, i) => Array(10).fill(i)).sort(() => Math.random() - 0.5);
@@ -31,13 +37,15 @@ function prepareGame () {
             ready: false,
             deck: deck1,
             hand: hand1,
-            grave: []
+            graveyard: [],
+            battlefield: []
         },
         player2: {
             ready: false,
             deck: deck2,
             hand: hand2,
-            grave: []
+            graveyard: [],
+            battlefield: []
         },
     }
 
@@ -141,6 +149,44 @@ io.on('connection', (socket) => {
         }
 
     });
+
+    socket.on('cardPlayed', (data) => {
+        console.log(data)
+        const game = currentGames[data.gameUUID];
+        const opponent = data.player === 'player1' ? 'player2' : 'player1';
+        
+        console.log(game[data.player].hand)
+        game[data.player].hand.splice(data.index, 1);
+        console.log(game[data.player].hand)
+    
+        // TODO: emit update hand event...?
+
+
+        // Notify the opponent
+        game[opponent].socket.emit('actionRequest', {
+            action: 'requestCounter',
+            index: data.index,
+            card: data.card // para mostrar na stack ()
+        });
+    });
+    
+    socket.on('counterAction', (data) => {
+        const game = currentGames[data.gameUUID];
+        const opponent = data.player === 'player1' ? 'player2' : 'player1';
+    
+        if (data.countered) {
+            // Action countered; notify the initiator
+            game[opponent].socket.emit('actionCountered', { card: data.card });
+        } else {
+            // Action confirmed; apply effect
+            game[data.player].socket.emit('actionConfirmed', { card: data.card });
+            game[opponent].socket.emit('actionConfirmed', { card: data.card });
+        }
+
+        
+    });
+
+
     // // when the client emits 'typing', we broadcast it to others
     // socket.on('typing', () => {
     //     socket.broadcast.emit('typing', {

@@ -1,0 +1,21 @@
+#opponentName {
+    color: brown;
+    position: absolute;
+	top: 10px;
+    left: 50px;
+	width: auto;
+	text-align: left;
+	z-index: 100;
+	display:block;
+}
+
+#playerName {
+    color: brown;
+    position: absolute;
+	bottom: 10px;
+    left: 50px;
+	width: auto;
+	text-align: left;
+	z-index: 100;
+	display:block;
+}
